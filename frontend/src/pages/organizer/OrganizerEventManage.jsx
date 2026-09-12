@@ -7,6 +7,7 @@ import {
   pollsApi,
   feedbackApi,
   analyticsApi,
+  clubsApi,
 } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -35,7 +36,11 @@ import {
   Plus,
   ArrowLeft,
   RefreshCw,
-  Search
+  Search,
+  ShieldCheck,
+  UserPlus,
+  Trash2,
+  Mail,
 } from 'lucide-react';
 
 export const OrganizerEventManage = () => {
@@ -56,11 +61,28 @@ export const OrganizerEventManage = () => {
   const [feedbackStats, setFeedbackStats] = useState(null);
   const [analytics, setAnalytics] = useState(null);
 
+  // Team & Club Organizers State
+  const [organizers, setOrganizers] = useState([]);
+  const [assignEmail, setAssignEmail] = useState('');
+  const [assignRole, setAssignRole] = useState('Event Co-Organizer');
+  const [assigning, setAssigning] = useState(false);
+  const [loadingOrganizers, setLoadingOrganizers] = useState(false);
+
   // UI Modals
   const [pollModalOpen, setPollModalOpen] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
   const [regSearch, setRegSearch] = useState('');
+
+  const filteredRegistrations = registrations.filter((r) => {
+    if (!regSearch) return true;
+    const q = regSearch.toLowerCase();
+    return (
+      (r.user?.full_name && r.user.full_name.toLowerCase().includes(q)) ||
+      (r.user?.email && r.user.email.toLowerCase().includes(q)) ||
+      (r.ticket?.ticket_code && r.ticket.ticket_code.toLowerCase().includes(q))
+    );
+  });
 
   const setActiveTab = (tab) => {
     setSearchParams({ tab });
@@ -69,6 +91,18 @@ export const OrganizerEventManage = () => {
   useEffect(() => {
     loadAllEventData();
   }, [id]);
+
+  const loadClubOrganizers = async (clubId) => {
+    setLoadingOrganizers(true);
+    try {
+      const res = await clubsApi.getOrganizers(clubId);
+      setOrganizers(res.data);
+    } catch (err) {
+      console.error('Failed to load club organizers:', err);
+    } finally {
+      setLoadingOrganizers(false);
+    }
+  };
 
   const loadAllEventData = async () => {
     setLoading(true);
@@ -91,11 +125,45 @@ export const OrganizerEventManage = () => {
       setPolls(pollsRes.data);
       setFeedbackStats(fbRes.data);
       setAnalytics(anaRes.data);
+
+      if (evRes.data?.club_id) {
+        loadClubOrganizers(evRes.data.club_id);
+      }
     } catch (err) {
       console.error('Failed to load event data:', err);
       toastError('Could not load complete event management hub');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAssignOrganizer = async (e) => {
+    e.preventDefault();
+    if (!assignEmail.trim()) return toastError('Please enter a valid user email');
+    setAssigning(true);
+    try {
+      await clubsApi.assignOrganizer(event.club_id, {
+        email: assignEmail.trim(),
+        role_title: assignRole.trim() || 'Event Co-Organizer',
+      });
+      toastSuccess(`Assigned ${assignEmail} as ${assignRole}!`);
+      setAssignEmail('');
+      loadClubOrganizers(event.club_id);
+    } catch (err) {
+      toastError(err.friendlyMessage || 'Failed to assign organizer');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleRemoveOrganizer = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to remove ${userName || 'this user'} from organizers?`)) return;
+    try {
+      await clubsApi.removeOrganizer(event.club_id, userId);
+      toastSuccess('Organizer removed successfully');
+      loadClubOrganizers(event.club_id);
+    } catch (err) {
+      toastError(err.friendlyMessage || 'Failed to remove organizer');
     }
   };
 
@@ -154,6 +222,7 @@ export const OrganizerEventManage = () => {
     { id: 'polls', label: `Live Polls (${polls.length})`, icon: MessageSquare },
     { id: 'feedback', label: 'Feedback & Reviews', icon: Star },
     { id: 'analytics', label: 'Intelligence & Health', icon: BarChart3 },
+    { id: 'team', label: `Team & Organizers (${organizers.length})`, icon: ShieldCheck },
   ];
 
   return (
@@ -275,8 +344,21 @@ export const OrganizerEventManage = () => {
             <h3 className="text-base font-bold text-white">Event Metadata</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-300">
               <div>
-                <span className="text-slate-500 block">Host Club</span>
-                <strong className="text-white">{event.club?.name}</strong>
+                <span className="text-slate-500 block mb-0.5">Host Club</span>
+                <strong className="text-white text-sm">{event.club?.name}</strong>
+                {event.club?.email && (
+                  <div className="flex items-center gap-1.5 text-indigo-400 font-mono text-[11px] mt-1">
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>{event.club.email}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <span className="text-slate-500 block mb-0.5">Capacity & Limits</span>
+                <strong className="text-white text-sm font-mono">{event.capacity} seats</strong>
+                <span className="text-slate-400 block text-[11px] mt-0.5">
+                  {Math.max(0, event.capacity - registrations.length)} seats remaining
+                </span>
               </div>
               <div>
                 <span className="text-slate-500 block">Category</span>
@@ -293,6 +375,10 @@ export const OrganizerEventManage = () => {
                 <strong className="text-white">
                   {new Date(event.registration_deadline).toLocaleString()}
                 </strong>
+              </div>
+              <div>
+                <span className="text-slate-500 block">Active Team Members</span>
+                <strong className="text-white">{organizers.length} authorized organizers</strong>
               </div>
               <div className="col-span-full">
                 <span className="text-slate-500 block">Description</span>
@@ -320,162 +406,165 @@ export const OrganizerEventManage = () => {
               />
             </div>
             <span className="text-xs text-slate-400 font-mono">
-              Total RSVPs: {registrations.length}
+              {filteredRegistrations.length} of {registrations.length} attendees
             </span>
           </div>
 
-          <div className="rounded-2xl glass-card border border-slate-800 overflow-hidden divide-y divide-slate-800">
-            {registrations.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400">
-                No students have registered for this event yet.
-              </div>
-            ) : (
-              registrations
-                .filter(
-                  (r) =>
-                    !regSearch ||
-                    r.user?.name.toLowerCase().includes(regSearch.toLowerCase()) ||
-                    r.user?.email.toLowerCase().includes(regSearch.toLowerCase()) ||
-                    r.ticket?.ticket_code.toLowerCase().includes(regSearch.toLowerCase())
-                )
-                .map((r) => (
-                  <div
-                    key={r.id}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:bg-slate-900/40 transition-colors"
-                  >
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{r.user?.name || 'Student'}</h4>
-                      <p className="text-slate-400">{r.user?.email}</p>
-                      <div className="flex items-center gap-3 text-[11px] text-slate-500 mt-1">
-                        <span>RSVP on {new Date(r.registered_at).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span className="font-mono text-indigo-400">
-                          Ticket: {r.ticket?.ticket_code || 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-start sm:self-auto">
-                      <StatusBadge status={r.status} size="sm" />
-                      {r.ticket?.used && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          CHECKED IN
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-            )}
+          <div className="overflow-x-auto rounded-2xl glass-card border border-slate-800">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-900/50">
+                  <th className="p-3.5">Student</th>
+                  <th className="p-3.5">Email</th>
+                  <th className="p-3.5">Department</th>
+                  <th className="p-3.5">Registered On</th>
+                  <th className="p-3.5">Ticket Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {filteredRegistrations.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="p-8 text-center text-slate-500">
+                      No registrations found matching search.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRegistrations.map((reg) => (
+                    <tr key={reg.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="p-3.5 font-medium text-white">
+                        {reg.user?.full_name || 'Anonymous'}
+                      </td>
+                      <td className="p-3.5 text-slate-400 font-mono">{reg.user?.email}</td>
+                      <td className="p-3.5 text-slate-400">
+                        {reg.user?.department || 'General'}
+                      </td>
+                      <td className="p-3.5 text-slate-400 font-mono">
+                        {new Date(reg.registered_at).toLocaleDateString()}
+                      </td>
+                      <td className="p-3.5">
+                        <StatusBadge status={reg.ticket?.status || reg.status} size="sm" />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Tab 3: ATTENDANCE & SCANNER */}
+      {/* Tab 3: ATTENDANCE & CHECK-IN */}
       {activeTab === 'attendance' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-indigo-400" />
-              Live Venue Check-In & Scanner
-            </h3>
-            <button
-              onClick={handleCheckInRefresh}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-semibold transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh Stats
-            </button>
-          </div>
-
-          {/* Turnout Stats Cards */}
           <AttendanceStats stats={attendanceStats} />
 
-          {/* QR Scanner (Camera + Manual Fallback) */}
-          <QRScanner eventId={event.id} onCheckInSuccess={handleCheckInRefresh} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-5">
+              <QRScanner onCheckInSuccess={handleCheckInRefresh} />
+            </div>
 
-          {/* Recent Scans Table */}
-          <div className="rounded-2xl glass-card border border-slate-800 p-5">
-            <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-400" />
-              Verified Attendee Log ({attendees.length})
-            </h4>
-
-            {attendees.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">
-                No attendees checked in yet. Scan a student's QR code or type their ticket code above.
-              </p>
-            ) : (
-              <div className="divide-y divide-slate-800/80">
-                {attendees.slice(0, 10).map((att) => (
-                  <div
-                    key={att.id}
-                    className="py-2.5 flex items-center justify-between text-xs gap-3"
-                  >
-                    <div>
-                      <p className="font-semibold text-white">{att.student_name}</p>
-                      <span className="font-mono text-[11px] text-slate-400">
-                        {att.ticket_code}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-emerald-400 font-medium">Checked In</span>
-                      <p className="text-[10px] text-slate-500 font-mono">
-                        {new Date(att.checked_in_at).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white">
+                  Live Checked-In Attendees ({attendees.length})
+                </h3>
+                <button
+                  onClick={handleCheckInRefresh}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
               </div>
-            )}
+
+              <div className="max-h-96 overflow-y-auto rounded-2xl glass-card border border-slate-800 divide-y divide-slate-800">
+                {attendees.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-xs">
+                    No attendees checked in yet. Use the scanner on the left to verify tickets.
+                  </div>
+                ) : (
+                  attendees.map((att) => (
+                    <div
+                      key={att.id}
+                      className="p-3.5 flex items-center justify-between hover:bg-slate-800/30 transition-colors"
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-white">
+                          {att.user?.full_name || 'Student'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 font-mono">{att.user?.email}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 block">
+                          VERIFIED
+                        </span>
+                        <span className="text-[10px] text-slate-500 mt-0.5 block">
+                          {new Date(att.checked_in_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Tab 4: LIVE POLLS */}
       {activeTab === 'polls' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-indigo-400" />
-                Live Audience Engagement Polls
-              </h3>
+              <h3 className="text-sm font-bold text-white">Live Audience Polls</h3>
               <p className="text-xs text-slate-400">
-                Create polls during the event to gather instant student votes.
+                Engage attendees in real-time during your keynote or workshop.
               </p>
             </div>
             <button
               onClick={() => setPollModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30"
             >
-              <Plus className="w-4 h-4" /> Create Poll
+              <Plus className="w-3.5 h-3.5" /> Create Poll
             </button>
           </div>
 
-          {polls.length === 0 ? (
-            <div className="p-12 text-center rounded-2xl glass-card border border-slate-800 text-slate-400 text-sm">
-              No polls created yet. Click "Create Poll" above to engage your audience.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {polls.map((p) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {polls.length === 0 ? (
+              <div className="col-span-2 p-8 text-center rounded-2xl glass-card border border-slate-800 text-slate-400 text-xs">
+                No polls created yet. Click "Create Poll" to initiate a real-time question.
+              </div>
+            ) : (
+              polls.map((poll) => (
                 <PollCard
-                  key={p.id}
-                  poll={p}
+                  key={poll.id}
+                  poll={poll}
                   isOrganizer={true}
-                  onStatusChange={loadAllEventData}
+                  onStatusToggle={async (pollId, newStatus) => {
+                    try {
+                      await pollsApi.updateStatus(pollId, newStatus);
+                      toastSuccess(`Poll status changed to ${newStatus}`);
+                      loadAllEventData();
+                    } catch (e) {
+                      toastError('Failed to change poll status');
+                    }
+                  }}
                 />
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
 
           <PollCreateModal
             isOpen={pollModalOpen}
             onClose={() => setPollModalOpen(false)}
-            eventId={event.id}
-            onPollCreated={loadAllEventData}
+            eventId={id}
+            onCreated={() => {
+              setPollModalOpen(false);
+              loadAllEventData();
+            }}
           />
         </div>
       )}
@@ -483,20 +572,10 @@ export const OrganizerEventManage = () => {
       {/* Tab 5: FEEDBACK & REVIEWS */}
       {activeTab === 'feedback' && (
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-              Verified Attendee Reviews
-            </h3>
-            <p className="text-xs text-slate-400">
-              Post-attendance reviews submitted by checked-in students.
-            </p>
-          </div>
-
           {feedbackStats && (
             <RatingDistribution
-              distribution={feedbackStats.rating_distribution}
               averageRating={feedbackStats.average_rating}
+              distribution={feedbackStats.rating_breakdown}
               totalFeedback={feedbackStats.total_feedback}
             />
           )}
@@ -547,6 +626,173 @@ export const OrganizerEventManage = () => {
               dataKey="count"
               xAxisKey="star"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Tab 7: TEAM & ORGANIZERS */}
+      {activeTab === 'team' && (
+        <div className="space-y-6">
+          {/* Host Club Details Banner */}
+          <div className="p-6 rounded-3xl glass-card border border-slate-800 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Host Club Authority
+                </span>
+                <h2 className="text-xl font-extrabold text-white">{event.club?.name}</h2>
+                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-400">
+                  {event.club?.email && (
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-700 text-indigo-300 font-mono">
+                      <Mail className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>{event.club.email}</span>
+                    </div>
+                  )}
+                  <span>•</span>
+                  <span>{organizers.length} Authorized Organizers</span>
+                  <span>•</span>
+                  <span className="text-emerald-400 font-medium">Full Event Control Active</span>
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-400 max-w-sm bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                Authorized organizers can co-manage this event, scan attendee QR tickets, launch live audience polls, and view registration analytics.
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Assign Co-Organizer Form */}
+            <div className="lg:col-span-5">
+              <div className="p-5 rounded-2xl glass-card border border-slate-800 space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-indigo-400" />
+                    Assign Co-Organizer
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Grant event management privileges to a student or team member using their email address.
+                  </p>
+                </div>
+
+                <form onSubmit={handleAssignOrganizer} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                      User Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={assignEmail}
+                      onChange={(e) => setAssignEmail(e.target.value)}
+                      placeholder="e.g. devon.lane@campus.edu or student@evntpulse.demo"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                      Role / Designation
+                    </label>
+                    <select
+                      value={assignRole}
+                      onChange={(e) => setAssignRole(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="Event Co-Organizer">Event Co-Organizer</option>
+                      <option value="Lead Coordinator">Lead Coordinator</option>
+                      <option value="QR Ticket Scanner">QR Ticket Scanner</option>
+                      <option value="Stage & Tech Lead">Stage & Tech Lead</option>
+                      <option value="Volunteer Manager">Volunteer Manager</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={assigning}
+                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    {assigning ? 'Assigning...' : 'Assign Organizer'}
+                  </button>
+                </form>
+
+                <div className="text-[10px] text-slate-500 border-t border-slate-800/80 pt-3">
+                  Note: If the user currently has a Student role, assigning them will automatically promote their account to Organizer status so they can access the management dashboard.
+                </div>
+              </div>
+            </div>
+
+            {/* Active Organizers List */}
+            <div className="lg:col-span-7">
+              <div className="p-5 rounded-2xl glass-card border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Users className="w-4 h-4 text-indigo-400" />
+                    Authorized Team Members ({organizers.length})
+                  </h3>
+                  <button
+                    onClick={() => event.club_id && loadClubOrganizers(event.club_id)}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                    title="Refresh list"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {loadingOrganizers ? (
+                  <div className="py-8 text-center text-slate-400 text-xs">
+                    Loading organizers...
+                  </div>
+                ) : organizers.length === 0 ? (
+                  <div className="py-8 text-center text-slate-500 text-xs rounded-xl border border-dashed border-slate-800 p-6">
+                    No co-organizers assigned yet. Use the form to add team members who can scan tickets and manage this event.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {organizers.map((org) => (
+                      <div
+                        key={org.id}
+                        className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center justify-between gap-3 hover:border-slate-700 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs uppercase">
+                            {org.user?.full_name ? org.user.full_name.slice(0, 2) : 'OR'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white">
+                                {org.user?.full_name || 'Organizer'}
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-semibold">
+                                {org.role_title}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-slate-400 font-mono block mt-0.5">
+                              {org.user?.email}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] text-slate-500 hidden sm:block">
+                            Assigned {new Date(org.assigned_at).toLocaleDateString()}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOrganizer(org.user_id, org.user?.full_name)}
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-colors"
+                            title="Revoke organizer permissions"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

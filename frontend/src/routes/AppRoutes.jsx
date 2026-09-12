@@ -10,6 +10,7 @@ import { AdminLayout } from '../layouts/AdminLayout';
 import { Home } from '../pages/public/Home';
 import { EventsDiscovery } from '../pages/public/EventsDiscovery';
 import { EventDetails } from '../pages/public/EventDetails';
+import { Clubs } from '../pages/public/Clubs';
 import { ClubDetails } from '../pages/public/ClubDetails';
 
 // Auth Pages
@@ -45,6 +46,7 @@ export const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/events" element={<EventsDiscovery />} />
         <Route path="/events/:id" element={<EventDetails />} />
+        <Route path="/clubs" element={<Clubs />} />
         <Route path="/clubs/:id" element={<ClubDetails />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

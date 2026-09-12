@@ -95,6 +95,10 @@ export const clubsApi = {
   getById: (id) => api.get(`/clubs/${id}`),
   getEvents: (id) => api.get(`/clubs/${id}/events`),
   create: (data) => api.post('/clubs', data),
+  getManagedClubs: () => api.get('/clubs/my/managed'),
+  getOrganizers: (clubId) => api.get(`/clubs/${clubId}/organizers`),
+  assignOrganizer: (clubId, data) => api.post(`/clubs/${clubId}/organizers`, data),
+  removeOrganizer: (clubId, userId) => api.delete(`/clubs/${clubId}/organizers/${userId}`),
 };
 
 export const usersApi = {

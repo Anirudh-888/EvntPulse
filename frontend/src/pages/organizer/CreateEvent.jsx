@@ -135,9 +135,16 @@ export const CreateEvent = () => {
           {/* Host Club & Category */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Host Club
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  Host Club
+                </label>
+                {clubs.find((c) => String(c.id) === String(clubId))?.email && (
+                  <span className="text-[11px] text-indigo-400 font-mono">
+                    {clubs.find((c) => String(c.id) === String(clubId)).email}
+                  </span>
+                )}
+              </div>
               <select
                 value={clubId}
                 onChange={(e) => setClubId(e.target.value)}
@@ -146,10 +153,13 @@ export const CreateEvent = () => {
               >
                 {clubs.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {c.name} {c.email ? `(${c.email})` : ''}
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Official club email will be used for host verification and student inquiries.
+              </p>
             </div>
 
             <div>
@@ -200,8 +210,8 @@ export const CreateEvent = () => {
             />
           </div>
 
-          {/* Venue and Capacity */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Venue and Capacity Control */}
+          <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                 Venue Location
@@ -219,20 +229,90 @@ export const CreateEvent = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Total Capacity (Seats)
-              </label>
-              <div className="relative">
-                <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            {/* Registration Limit / Capacity Controls */}
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-indigo-400" />
+                    Registration Capacity & Attendee Limit
+                  </label>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Set the maximum number of registrations allowed. Registrations automatically lock once filled.
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-black text-indigo-400 font-mono">{capacity}</span>
+                  <span className="text-xs text-slate-500 ml-1">seats</span>
+                </div>
+              </div>
+
+              {/* Preset buttons */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { label: '50 Seats', sub: 'Workshop / Lab', val: 50 },
+                  { label: '100 Seats', sub: 'Standard Hall', val: 100 },
+                  { label: '250 Seats', sub: 'Auditorium', val: 250 },
+                  { label: '500 Seats', sub: 'Grand Fest', val: 500 },
+                ].map((preset) => {
+                  const isSelected = Number(capacity) === preset.val;
+                  return (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => setCapacity(preset.val)}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? 'border-indigo-500 bg-indigo-500/10 text-white ring-1 ring-indigo-500/30'
+                          : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-slate-200">{preset.label}</div>
+                      <div className="text-[10px] text-slate-500">{preset.sub}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Stepper / custom input */}
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Custom Limit:</span>
+                <button
+                  type="button"
+                  onClick={() => setCapacity((prev) => Math.max(1, Number(prev) - 10))}
+                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold flex items-center justify-center transition-colors"
+                >
+                  -10
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCapacity((prev) => Math.max(1, Number(prev) - 1))}
+                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold flex items-center justify-center transition-colors"
+                >
+                  -1
+                </button>
                 <input
                   type="number"
                   min="1"
+                  max="10000"
                   value={capacity}
-                  onChange={(e) => setCapacity(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
-                  required
+                  onChange={(e) => setCapacity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-24 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-center text-sm font-mono font-bold text-indigo-300 focus:outline-none focus:border-indigo-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => setCapacity((prev) => Number(prev) + 1)}
+                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold flex items-center justify-center transition-colors"
+                >
+                  +1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCapacity((prev) => Number(prev) + 10)}
+                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold flex items-center justify-center transition-colors"
+                >
+                  +10
+                </button>
               </div>
             </div>
           </div>

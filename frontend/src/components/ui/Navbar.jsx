@@ -16,7 +16,9 @@ import {
   ShieldAlert,
   Sparkles,
   Menu,
-  X
+  X,
+  Building,
+  Plus
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -93,6 +95,17 @@ export const Navbar = () => {
               <Compass className="w-4 h-4" />
               Explore Events
             </Link>
+            <Link
+              to="/clubs"
+              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                isActive('/clubs')
+                  ? 'bg-slate-800 text-indigo-400 font-semibold'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Building className="w-4 h-4" />
+              Campus Clubs
+            </Link>
             {isStudent && (
               <>
                 <Link
@@ -156,6 +169,15 @@ export const Navbar = () => {
               >
                 <ShieldAlert className="w-4 h-4 text-amber-400" />
                 Admin Panel
+              </Link>
+            )}
+            {(isOrganizer || isAdmin) && (
+              <Link
+                to="/organizer/events/create"
+                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5 ml-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Create Event</span>
               </Link>
             )}
           </nav>
@@ -297,6 +319,22 @@ export const Navbar = () => {
           >
             Explore Events
           </Link>
+          <Link
+            to="/clubs"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-sm text-slate-300 hover:bg-slate-900 rounded-lg"
+          >
+            Campus Clubs
+          </Link>
+          {(isOrganizer || isAdmin) && (
+            <Link
+              to="/organizer/events/create"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 text-sm font-bold text-indigo-400 hover:bg-slate-900 rounded-lg"
+            >
+              + Create Event
+            </Link>
+          )}
           {isStudent && (
             <>
               <Link
