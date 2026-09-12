@@ -6,13 +6,14 @@ from app.models.event import Event
 from app.models.poll import Poll, PollOption, PollResponse, PollStatus
 from app.models.user import User, UserRole
 from app.schemas.poll import PollCreate, PollResponse as PollSchema, PollOptionResponse, PollResultsResponse
+from app.utils.permissions import can_manage_event
 
 def create_poll(db: Session, event_id: int, poll_in: PollCreate, current_user: User) -> Poll:
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-    if current_user.role != UserRole.ADMIN and event.club.owner_id != current_user.id:
+    if not can_manage_event(current_user, event):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
 
     if len(poll_in.options) < 2:
@@ -39,7 +40,7 @@ def set_poll_status(db: Session, poll_id: int, new_status: PollStatus, current_u
     if not poll:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Poll not found")
 
-    if current_user.role != UserRole.ADMIN and poll.event.club.owner_id != current_user.id:
+    if not can_manage_event(current_user, poll.event):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
 
     poll.status = new_status

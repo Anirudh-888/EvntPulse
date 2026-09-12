@@ -1,5 +1,5 @@
 from app.models.user import User, UserRole
-from app.models.club import Club
+from app.models.club import Club, ClubOrganizer
 from app.models.event import Event, EventStatus, EventCategory
 from app.models.registration import Registration, RegistrationStatus
 from app.models.ticket import Ticket
@@ -12,6 +12,7 @@ __all__ = [
     "User",
     "UserRole",
     "Club",
+    "ClubOrganizer",
     "Event",
     "EventStatus",
     "EventCategory",

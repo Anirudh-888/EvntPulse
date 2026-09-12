@@ -7,6 +7,7 @@ from app.models.event import Event
 from app.schemas.registration import RegistrationResponse
 from app.services import registration_service
 from app.api.deps import get_current_user, require_roles
+from app.utils.permissions import can_manage_event
 
 router = APIRouter(tags=["Registrations"])
 
@@ -44,7 +45,7 @@ def get_event_registrations(
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-    if current_user.role != UserRole.ADMIN and event.club.owner_id != current_user.id:
+    if not can_manage_event(current_user, event):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
 
     return registration_service.get_event_registrations(db, event_id)

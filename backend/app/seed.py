@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from app.core.database import SessionLocal, engine, Base
 from app.core.security import get_password_hash, generate_ticket_code, generate_qr_token
 from app.models.user import User, UserRole
-from app.models.club import Club
+from app.models.club import Club, ClubOrganizer
 from app.models.event import Event, EventStatus, EventCategory
 from app.models.registration import Registration, RegistrationStatus
 from app.models.ticket import Ticket
@@ -140,46 +140,53 @@ def seed_database():
     db.commit()
     print("Users created: 1 Admin, 3 Organizers, 36 Students.")
 
-    # 2. Create 7 Active Campus Clubs
+    # 2. Create 7 Active Campus Clubs with Official Club Emails
     clubs_data = [
         (
             "Google Developer Student Club (GDSC)",
+            "gdsc@evntpulse.demo",
             "Empowering students to build impactful software and engage with Google cloud & developer technologies.",
             "https://images.unsplash.com/photo-1573164713988-8665fc963095?w=200",
             organizer_primary.id
         ),
         (
             "ACM Student Chapter",
+            "acm@evntpulse.demo",
             "Fostering algorithmic problem solving, competitive programming, and research excellence.",
             "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=200",
             organizer_primary.id
         ),
         (
             "Robotics & Automation Society",
+            "robotics@evntpulse.demo",
             "Hands-on robotics hardware, micro-controllers, autonomous rovers, and sensor integration.",
             "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=200",
             organizer_2.id
         ),
         (
             "Design & Creative Studio",
+            "design@evntpulse.demo",
             "UI/UX design, generative branding, visual storytelling, and 3D modeling collective.",
             "https://images.unsplash.com/photo-1542744094-3a31f272c490?w=200",
             organizer_3.id
         ),
         (
             "Campus Cultural Society",
+            "cultural@evntpulse.demo",
             "Celebrating music, dance, theatrical arts, and vibrant cross-cultural festivals across campus.",
             "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=200",
             organizer_3.id
         ),
         (
             "Campus E-Sports & Gaming Guild",
+            "esports@evntpulse.demo",
             "Competitive university leagues, LAN tournaments, game dev showcases, and stream production.",
             "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=200",
             organizer_2.id
         ),
         (
             "Entrepreneurship & Startup Cell",
+            "ecell@evntpulse.demo",
             "Incubation, venture pitch rounds, angel investor meetups, and founder workshops.",
             "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=200",
             organizer_primary.id
@@ -187,13 +194,36 @@ def seed_database():
     ]
 
     created_clubs = []
-    for name, desc, logo, owner_id in clubs_data:
-        c = Club(name=name, description=desc, logo_url=logo, owner_id=owner_id)
+    for name, club_email, desc, logo, owner_id in clubs_data:
+        c = Club(name=name, email=club_email, description=desc, logo_url=logo, owner_id=owner_id)
         db.add(c)
         created_clubs.append(c)
 
     db.commit()
-    print(f"Created {len(created_clubs)} Campus Clubs.")
+    print(f"Created {len(created_clubs)} Campus Clubs with official emails.")
+
+    # Seed initial assigned organizers
+    # Assign Devon (student) as Check-in Coordinator for Cultural Society
+    org_assignment_1 = ClubOrganizer(
+        club_id=created_clubs[4].id, # Campus Cultural Society
+        user_id=demo_student.id,
+        role_title="Check-in Coordinator & Scanner Volunteer"
+    )
+    # Assign Liam Johnson as Technical Lead for GDSC
+    org_assignment_2 = ClubOrganizer(
+        club_id=created_clubs[0].id, # GDSC
+        user_id=student_users[0].id,
+        role_title="Technical Lead"
+    )
+    # Assign Marcus Vance as Co-Organizer for GDSC
+    org_assignment_3 = ClubOrganizer(
+        club_id=created_clubs[0].id, # GDSC
+        user_id=organizer_2.id,
+        role_title="Co-Organizer"
+    )
+    db.add_all([org_assignment_1, org_assignment_2, org_assignment_3])
+    db.commit()
+    print("Seeded 3 initial ClubOrganizer assignments.")
 
     # 3. Create 24+ Events across categories and lifecycles
     event_templates = [

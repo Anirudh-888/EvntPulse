@@ -8,6 +8,7 @@ from app.models.registration import Registration, RegistrationStatus
 from app.models.attendance import Attendance
 from app.models.user import User, UserRole
 from app.schemas.attendance import CheckInRequest, CheckInResponse, AttendanceStatsResponse, AttendanceRecordResponse
+from app.utils.permissions import can_manage_event
 
 def check_in_attendee(
     db: Session,
@@ -22,8 +23,8 @@ def check_in_attendee(
             message="Event not found"
         )
 
-    # Validate organizer owns this event's club or is admin
-    if current_user.role != UserRole.ADMIN and event.club.owner_id != current_user.id:
+    # Validate organizer owns this event's club, is an assigned organizer, or is admin
+    if not can_manage_event(current_user, event):
         return CheckInResponse(
             success=False,
             status="UNAUTHORIZED",

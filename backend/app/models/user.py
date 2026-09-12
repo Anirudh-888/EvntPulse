@@ -26,6 +26,7 @@ class User(Base):
 
     # Relationships
     clubs_owned = relationship("Club", back_populates="owner", cascade="all, delete-orphan")
+    clubs_organized = relationship("ClubOrganizer", back_populates="user", cascade="all, delete-orphan")
     registrations = relationship("Registration", back_populates="user", cascade="all, delete-orphan")
     feedback = relationship("Feedback", back_populates="user", cascade="all, delete-orphan")
     poll_responses = relationship("PollResponse", back_populates="user", cascade="all, delete-orphan")

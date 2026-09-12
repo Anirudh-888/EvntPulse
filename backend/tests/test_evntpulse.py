@@ -58,6 +58,7 @@ def setup_test_db():
     club = Club(
         name="Robotics Club",
         description="Campus Robotics",
+        email="robotics@evntpulse.demo",
         owner_id=organizer.id
     )
     db.add(club)
@@ -258,3 +259,58 @@ def test_analytics_and_health_score():
     assert "health_breakdown" in data
     assert 0 <= data["event_health_score"] <= 100
     assert len(data["insights"]) > 0
+
+# --- CLUB EMAIL & MULTI-ORGANIZER CO-MANAGEMENT ---
+def test_club_has_official_email():
+    resp = client.get("/api/v1/clubs/1")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["email"] == "robotics@evntpulse.demo"
+
+def test_assign_club_organizer_and_role_elevation():
+    # Owner assigns student3 as co-organizer
+    org_token = get_auth_token("organizer@test.com")
+    resp = client.post("/api/v1/clubs/1/organizers", json={
+        "email": "student3@test.com",
+        "role_title": "Lead Coordinator"
+    }, headers={"Authorization": f"Bearer {org_token}"})
+    assert resp.status_code == 201
+    assert resp.json()["role_title"] == "Lead Coordinator"
+    assert resp.json()["user"]["email"] == "student3@test.com"
+
+    # Verify student3 role elevated to ORGANIZER
+    stu3_token = get_auth_token("student3@test.com")
+    me_resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {stu3_token}"})
+    assert me_resp.json()["role"] == "ORGANIZER"
+
+    # Verify listing organizers for club 1
+    list_resp = client.get("/api/v1/clubs/1/organizers", headers={"Authorization": f"Bearer {org_token}"})
+    assert list_resp.status_code == 200
+    assert len(list_resp.json()) >= 1
+    assert any(o["user"]["email"] == "student3@test.com" for o in list_resp.json())
+
+def test_assigned_organizer_can_manage_event_poll():
+    # student3 is now an assigned organizer, so they can create polls on event 1
+    stu3_token = get_auth_token("student3@test.com")
+    poll_resp = client.post("/api/v1/events/1/polls", json={
+        "question": "Are you enjoying the technical demo?",
+        "options": ["Yes, very much!", "Could be better"]
+    }, headers={"Authorization": f"Bearer {stu3_token}"})
+    assert poll_resp.status_code == 201
+    assert poll_resp.json()["question"] == "Are you enjoying the technical demo?"
+
+def test_remove_club_organizer():
+    org_token = get_auth_token("organizer@test.com")
+    # Get user id of student3
+    stu3_token = get_auth_token("student3@test.com")
+    me_resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {stu3_token}"})
+    student3_id = me_resp.json()["id"]
+
+    # Remove student3
+    del_resp = client.delete(f"/api/v1/clubs/1/organizers/{student3_id}", headers={"Authorization": f"Bearer {org_token}"})
+    assert del_resp.status_code == 204
+
+    # Verify student3 is no longer in organizers list
+    list_resp = client.get("/api/v1/clubs/1/organizers", headers={"Authorization": f"Bearer {org_token}"})
+    assert all(o["user_id"] != student3_id for o in list_resp.json())
+

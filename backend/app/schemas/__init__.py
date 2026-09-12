@@ -1,6 +1,13 @@
 from app.schemas.auth import Token, TokenData, LoginRequest
 from app.schemas.user import UserCreate, UserResponse, UserUpdate
-from app.schemas.club import ClubCreate, ClubResponse, ClubUpdate
+from app.schemas.club import (
+    ClubCreate,
+    ClubResponse,
+    ClubUpdate,
+    ClubOrganizerCreate,
+    ClubOrganizerResponse,
+    ClubWithOrganizersResponse
+)
 from app.schemas.event import EventCreate, EventResponse, EventUpdate, EventDetailResponse
 from app.schemas.registration import RegistrationResponse
 from app.schemas.ticket import TicketResponse
@@ -19,6 +26,9 @@ __all__ = [
     "ClubCreate",
     "ClubResponse",
     "ClubUpdate",
+    "ClubOrganizerCreate",
+    "ClubOrganizerResponse",
+    "ClubWithOrganizersResponse",
     "EventCreate",
     "EventResponse",
     "EventUpdate",
