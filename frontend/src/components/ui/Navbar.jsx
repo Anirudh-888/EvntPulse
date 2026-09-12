@@ -63,16 +63,18 @@ export const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform">
-              <Activity className="w-5 h-5 text-white animate-pulse" />
-            </div>
+          <Link to="/" className="flex items-center gap-3 group">
+            <img
+              src="/evntpulse-logo.png"
+              alt="EvntPulse"
+              className="h-9 w-auto object-contain rounded-lg drop-shadow-[0_2px_10px_rgba(99,102,241,0.5)] group-hover:scale-105 transition-transform"
+            />
             <div className="flex flex-col">
-              <span className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
-                Evnt<span className="text-indigo-400">Pulse</span>
+              <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5 leading-none">
+                Evnt<span className="text-cyan-400">Pulse</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80 animate-ping" />
               </span>
-              <span className="text-[10px] text-slate-400 font-medium -mt-1 tracking-wider uppercase">
+              <span className="text-[9px] text-slate-400 font-semibold tracking-widest uppercase mt-0.5">
                 Campus OS
               </span>
             </div>
