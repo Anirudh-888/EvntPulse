@@ -52,6 +52,9 @@ export const eventsApi = {
   update: (id, data) => api.put(`/events/${id}`, data),
   delete: (id) => api.delete(`/events/${id}`),
   publish: (id) => api.post(`/events/${id}/publish`),
+  submitApproval: (id) => api.post(`/events/${id}/submit-approval`),
+  approve: (id) => api.post(`/events/${id}/approve`),
+  reject: (id) => api.post(`/events/${id}/reject`),
   cancel: (id) => api.post(`/events/${id}/cancel`),
   complete: (id) => api.post(`/events/${id}/complete`),
 };
@@ -95,6 +98,7 @@ export const clubsApi = {
   getById: (id) => api.get(`/clubs/${id}`),
   getEvents: (id) => api.get(`/clubs/${id}/events`),
   create: (data) => api.post('/clubs', data),
+  delete: (id) => api.delete(`/clubs/${id}`),
   getManagedClubs: () => api.get('/clubs/my/managed'),
   getOrganizers: (clubId) => api.get(`/clubs/${clubId}/organizers`),
   assignOrganizer: (clubId, data) => api.post(`/clubs/${clubId}/organizers`, data),

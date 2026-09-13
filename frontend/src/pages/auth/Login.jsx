@@ -443,40 +443,67 @@ export const Login = () => {
                     type="button"
                     disabled={loading}
                     onClick={() =>
-                      handleQuickDemoLogin('student@evntpulse.demo', 'Student@123', '/student/dashboard')
+                      handleQuickDemoLogin('student@mvjce.edu.in', 'Student@123', '/student/dashboard')
                     }
                     className="p-2.5 rounded-xl bg-white/[0.02] hover:bg-indigo-600 hover:text-white border border-white/10 text-center transition-all group cursor-pointer"
                   >
                     <UserCheck className="w-4 h-4 text-indigo-400 group-hover:text-white mx-auto mb-1" />
                     <span className="block text-xs font-bold text-slate-200 group-hover:text-white">Student</span>
-                    <span className="block text-[10px] text-slate-400 group-hover:text-indigo-200">Devon</span>
+                    <span className="block text-[10px] text-slate-400 group-hover:text-indigo-200">Arjun</span>
                   </button>
 
                   <button
                     type="button"
                     disabled={loading}
                     onClick={() =>
-                      handleQuickDemoLogin('organizer@evntpulse.demo', 'Organizer@123', '/organizer/dashboard')
+                      handleQuickDemoLogin('sdc@mvjce.edu.in', 'Club@123', '/organizer/dashboard')
                     }
                     className="p-2.5 rounded-xl bg-white/[0.02] hover:bg-indigo-600 hover:text-white border border-white/10 text-center transition-all group cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4 text-cyan-400 group-hover:text-white mx-auto mb-1" />
-                    <span className="block text-xs font-bold text-slate-200 group-hover:text-white">Organizer</span>
-                    <span className="block text-[10px] text-slate-400 group-hover:text-cyan-200">Sarah</span>
+                    <span className="block text-xs font-bold text-slate-200 group-hover:text-white">Club Lead</span>
+                    <span className="block text-[10px] text-slate-400 group-hover:text-cyan-200">SDC MVJCE</span>
                   </button>
 
                   <button
                     type="button"
                     disabled={loading}
                     onClick={() =>
-                      handleQuickDemoLogin('admin@evntpulse.demo', 'Admin@123', '/admin/dashboard')
+                      handleQuickDemoLogin('it.admin@mvjce.edu.in', 'Admin@123', '/admin/dashboard')
                     }
-                    className="p-2.5 rounded-xl bg-white/[0.02] hover:bg-indigo-600 hover:text-white border border-white/10 text-center transition-all group cursor-pointer"
+                    className="p-2.5 rounded-xl bg-white/[0.02] hover:bg-amber-500 hover:text-white border border-white/10 text-center transition-all group cursor-pointer"
                   >
                     <Shield className="w-4 h-4 text-amber-400 group-hover:text-white mx-auto mb-1" />
-                    <span className="block text-xs font-bold text-slate-200 group-hover:text-white">Admin</span>
-                    <span className="block text-[10px] text-slate-400 group-hover:text-amber-200">Alex</span>
+                    <span className="block text-xs font-bold text-slate-200 group-hover:text-white">IT Admin</span>
+                    <span className="block text-[10px] text-slate-400 group-hover:text-amber-200">MVJCE IT</span>
                   </button>
+                </div>
+
+                {/* More MVJCE Clubs switcher row */}
+                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                  <span>Other Clubs:</span>
+                  <div className="flex items-center gap-1.5 overflow-x-auto">
+                    {[
+                      { short: 'GDC', email: 'gdc@mvjce.edu.in' },
+                      { short: 'AWS', email: 'aws.club@mvjce.edu.in' },
+                      { short: 'TedX', email: 'tedx@mvjce.edu.in' },
+                      { short: 'NIC', email: 'nic@mvjce.edu.in' },
+                      { short: 'Raaga', email: 'raagabhinaya@mvjce.edu.in' },
+                      { short: 'Dhwani', email: 'dhwani@mvjce.edu.in' },
+                      { short: 'Saahitya', email: 'saahitya@mvjce.edu.in' },
+                      { short: 'Toast', email: 'toastmasters@mvjce.edu.in' },
+                    ].map((c) => (
+                      <button
+                        key={c.email}
+                        type="button"
+                        onClick={() => handleQuickDemoLogin(c.email, 'Club@123', '/organizer/dashboard')}
+                        className="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-indigo-600/40 text-[10px] text-slate-300 font-mono transition-colors"
+                        title={`Login as ${c.email}`}
+                      >
+                        {c.short}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -563,7 +590,7 @@ export const Login = () => {
                             setMascotState('idle');
                             setIsTyping(false);
                           }}
-                          placeholder="student@evntpulse.demo"
+                          placeholder="student@mvjce.edu.in or sdc@mvjce.edu.in"
                           className={`w-full pl-11 pr-4 py-3 rounded-xl bg-slate-950/70 border text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all duration-300 ${
                             mascotState === 'email'
                               ? 'border-cyan-400 ring-2 ring-cyan-400/20 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
@@ -691,7 +718,7 @@ export const Login = () => {
                             setMascotState('idle');
                             setIsTyping(false);
                           }}
-                          placeholder="devon@campus.edu"
+                          placeholder="arjun@mvjce.edu.in"
                           className="w-full pl-11 pr-3 py-2.5 rounded-lg bg-slate-950/60 border border-white/10 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
                           required
                         />

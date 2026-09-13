@@ -5,6 +5,7 @@ export const StatusBadge = ({ status, size = 'md' }) => {
   
   const statusStyles = {
     PUBLISHED: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+    PENDING_APPROVAL: 'bg-amber-500/15 text-amber-300 border border-amber-500/40 animate-pulse',
     ONGOING: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 animate-pulse',
     COMPLETED: 'bg-slate-500/10 text-slate-400 border border-slate-500/30',
     DRAFT: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
@@ -18,11 +19,12 @@ export const StatusBadge = ({ status, size = 'md' }) => {
   };
 
   const style = statusStyles[status?.toUpperCase()] || 'bg-slate-800 text-slate-300 border border-slate-700';
+  const label = status === 'PENDING_APPROVAL' ? 'Pending Approval' : status;
 
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full ${sizeClasses} ${style} tracking-wide uppercase`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
-      {status}
+      {label}
     </span>
   );
 };

@@ -33,7 +33,7 @@ export const OrganizerDashboard = () => {
     try {
       const [eventsRes, clubsRes] = await Promise.all([
         eventsApi.list({ all_statuses: true }),
-        clubsApi.list(),
+        clubsApi.getManagedClubs(),
       ]);
       setEvents(eventsRes.data);
       setClubs(clubsRes.data);

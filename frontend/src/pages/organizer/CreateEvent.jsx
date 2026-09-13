@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { eventsApi, clubsApi } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
-import { Calendar, Clock, MapPin, Users, Image, Building, Plus, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Calendar, Clock, MapPin, Users, Image, Building, Plus, ArrowLeft, Mail, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CATEGORIES = [
@@ -19,6 +20,7 @@ const CATEGORIES = [
 
 export const CreateEvent = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toastSuccess, toastError } = useNotification();
 
   const [clubs, setClubs] = useState([]);
@@ -36,17 +38,19 @@ export const CreateEvent = () => {
   const [registrationDeadline, setRegistrationDeadline] = useState('');
   const [capacity, setCapacity] = useState(100);
   const [posterUrl, setPosterUrl] = useState('');
+  const [rsvpEmail1, setRsvpEmail1] = useState('');
+  const [rsvpEmail2, setRsvpEmail2] = useState('');
 
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const res = await clubsApi.list();
+        const res = await clubsApi.getManagedClubs();
         setClubs(res.data);
         if (res.data.length > 0) {
           setClubId(res.data[0].id);
         }
       } catch (err) {
-        console.error('Failed to load clubs:', err);
+        console.error('Failed to load managed clubs:', err);
       } finally {
         setLoadingClubs(false);
       }
@@ -101,10 +105,16 @@ export const CreateEvent = () => {
           posterUrl.trim() ||
           'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1000',
         status: statusToSet,
+        rsvp_email_1: rsvpEmail1.trim() || null,
+        rsvp_email_2: rsvpEmail2.trim() || null,
       };
 
       const res = await eventsApi.create(payload);
-      toastSuccess(`Event created as ${statusToSet}!`);
+      const msg =
+        statusToSet === 'PENDING_APPROVAL'
+          ? 'Event submitted for IT Admin Approval!'
+          : `Event saved as ${statusToSet}!`;
+      toastSuccess(msg);
       navigate(`/organizer/events/${res.data.id}`);
     } catch (err) {
       toastError(err.friendlyMessage || 'Failed to create event');
@@ -377,8 +387,49 @@ export const CreateEvent = () => {
             </div>
           </div>
 
+          {/* 2 RSVP Manager Emails */}
+          <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/20 space-y-3">
+            <div>
+              <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-indigo-400" />
+                Event RSVP & Attendance Managers (Up to 2 Emails)
+              </label>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Assign up to 2 student coordinators or volunteer emails to manage attendee check-ins and scan QR passes for this event.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  RSVP Manager 1 Email
+                </label>
+                <input
+                  type="email"
+                  value={rsvpEmail1}
+                  onChange={(e) => setRsvpEmail1(e.target.value)}
+                  placeholder="e.g. student@mvjce.edu.in"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  RSVP Manager 2 Email
+                </label>
+                <input
+                  type="email"
+                  value={rsvpEmail2}
+                  onChange={(e) => setRsvpEmail2(e.target.value)}
+                  placeholder="e.g. volunteer@mvjce.edu.in"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Action Buttons */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               disabled={submitting}
@@ -390,11 +441,22 @@ export const CreateEvent = () => {
             <button
               type="button"
               disabled={submitting}
-              onClick={() => handleCreate('PUBLISHED')}
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
+              onClick={() => handleCreate('PENDING_APPROVAL')}
+              className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-lg shadow-amber-600/30 flex items-center gap-1.5"
             >
-              {submitting ? 'Publishing...' : 'Publish Event'}
+              <ShieldCheck className="w-4 h-4" />
+              {submitting ? 'Submitting...' : 'Submit for Admin Approval'}
             </button>
+            {user?.role === 'ADMIN' && (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => handleCreate('PUBLISHED')}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
+              >
+                {submitting ? 'Publishing...' : 'Publish Directly'}
+              </button>
+            )}
           </div>
         </form>
       </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { clubsApi } from '../../services/api';
 import { useNotification } from '../../context/NotificationContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { Flag, ArrowRight, Mail, Plus, Building } from 'lucide-react';
+import { Flag, ArrowRight, Mail, Plus, Building, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const AdminClubs = () => {
@@ -15,8 +15,10 @@ export const AdminClubs = () => {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
   const [description, setDescription] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchClubs();
@@ -44,6 +46,7 @@ export const AdminClubs = () => {
       await clubsApi.create({
         name: name.trim(),
         email: email.trim(),
+        owner_email: ownerEmail.trim() || email.trim(),
         description: description.trim(),
         logo_url: logoUrl.trim() || 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=200',
       });
@@ -51,6 +54,7 @@ export const AdminClubs = () => {
       setModalOpen(false);
       setName('');
       setEmail('');
+      setOwnerEmail('');
       setDescription('');
       setLogoUrl('');
       fetchClubs();
@@ -58,6 +62,20 @@ export const AdminClubs = () => {
       toastError(err.friendlyMessage || 'Failed to create club');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteClub = async (clubId, clubName) => {
+    if (!window.confirm(`Are you sure you want to delete "${clubName}"? All its events and records will be removed.`)) return;
+    setDeletingId(clubId);
+    try {
+      await clubsApi.delete(clubId);
+      toastSuccess(`Club "${clubName}" deleted successfully`);
+      setClubs((prev) => prev.filter((c) => c.id !== clubId));
+    } catch (err) {
+      toastError(err.friendlyMessage || 'Failed to delete club');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -106,13 +124,23 @@ export const AdminClubs = () => {
               </div>
             </div>
 
-            <Link
-              to={`/clubs/${c.id}`}
-              className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 flex items-center gap-1.5 shrink-0"
-            >
-              <span>View Club</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                to={`/clubs/${c.id}`}
+                className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 flex items-center gap-1.5"
+              >
+                <span>View Club</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <button
+                disabled={deletingId === c.id}
+                onClick={() => handleDeleteClub(c.id, c.name)}
+                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 transition-colors"
+                title="Delete Club"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -148,7 +176,7 @@ export const AdminClubs = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. AI & Robotics Guild"
+                  placeholder="e.g. AI & Robotics Club MVJCE"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   required
                 />
@@ -162,9 +190,22 @@ export const AdminClubs = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. guild@evntpulse.demo"
+                  placeholder="e.g. robotics@mvjce.edu.in"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Manager / Lead Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  value={ownerEmail}
+                  onChange={(e) => setOwnerEmail(e.target.value)}
+                  placeholder="e.g. lead.robotics@mvjce.edu.in (defaults to club email)"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
                 />
               </div>
 

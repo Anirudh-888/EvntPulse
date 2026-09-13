@@ -41,10 +41,13 @@ import {
   UserPlus,
   Trash2,
   Mail,
+  AlertCircle,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export const OrganizerEventManage = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'overview';
 
@@ -60,6 +63,11 @@ export const OrganizerEventManage = () => {
   const [polls, setPolls] = useState([]);
   const [feedbackStats, setFeedbackStats] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+
+  // RSVP Managers State
+  const [rsvpEmail1, setRsvpEmail1] = useState('');
+  const [rsvpEmail2, setRsvpEmail2] = useState('');
+  const [savingRsvp, setSavingRsvp] = useState(false);
 
   // Team & Club Organizers State
   const [organizers, setOrganizers] = useState([]);
@@ -125,6 +133,8 @@ export const OrganizerEventManage = () => {
       setPolls(pollsRes.data);
       setFeedbackStats(fbRes.data);
       setAnalytics(anaRes.data);
+      setRsvpEmail1(evRes.data?.rsvp_email_1 || '');
+      setRsvpEmail2(evRes.data?.rsvp_email_2 || '');
 
       if (evRes.data?.club_id) {
         loadClubOrganizers(evRes.data.club_id);
@@ -134,6 +144,43 @@ export const OrganizerEventManage = () => {
       toastError('Could not load complete event management hub');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveRsvpManagers = async (e) => {
+    e.preventDefault();
+    setSavingRsvp(true);
+    try {
+      const res = await eventsApi.update(id, {
+        rsvp_email_1: rsvpEmail1.trim() || null,
+        rsvp_email_2: rsvpEmail2.trim() || null,
+      });
+      setEvent(res.data);
+      toastSuccess('RSVP Managers updated successfully!');
+    } catch (err) {
+      toastError(err.friendlyMessage || 'Failed to update RSVP managers');
+    } finally {
+      setSavingRsvp(false);
+    }
+  };
+
+  const handleSubmitApproval = async () => {
+    try {
+      const res = await eventsApi.submitApproval(id);
+      setEvent(res.data);
+      toastSuccess('Event submitted for IT Admin Approval!');
+    } catch (err) {
+      toastError(err.friendlyMessage || 'Failed to submit for approval');
+    }
+  };
+
+  const handleApproveEvent = async () => {
+    try {
+      const res = await eventsApi.approve(id);
+      setEvent(res.data);
+      toastSuccess('Event approved and published to all campus students!');
+    } catch (err) {
+      toastError(err.friendlyMessage || 'Failed to approve event');
     }
   };
 
@@ -222,7 +269,7 @@ export const OrganizerEventManage = () => {
     { id: 'polls', label: `Live Polls (${polls.length})`, icon: MessageSquare },
     { id: 'feedback', label: 'Feedback & Reviews', icon: Star },
     { id: 'analytics', label: 'Intelligence & Health', icon: BarChart3 },
-    { id: 'team', label: `Team & Organizers (${organizers.length})`, icon: ShieldCheck },
+    { id: 'team', label: `Team & RSVPs (${organizers.length})`, icon: ShieldCheck },
   ];
 
   return (
@@ -246,13 +293,32 @@ export const OrganizerEventManage = () => {
         </div>
 
         {/* Quick Lifecycle Controls */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           {event.status === 'DRAFT' && (
+            <>
+              <button
+                onClick={handleSubmitApproval}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all shadow-md shadow-amber-600/30 flex items-center gap-1.5"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" /> Submit for Approval
+              </button>
+              {user?.role === 'ADMIN' && (
+                <button
+                  onClick={handlePublish}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/30 flex items-center gap-1.5"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" /> Publish Immediately
+                </button>
+              )}
+            </>
+          )}
+
+          {event.status === 'PENDING_APPROVAL' && user?.role === 'ADMIN' && (
             <button
-              onClick={handlePublish}
+              onClick={handleApproveEvent}
               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/30 flex items-center gap-1.5"
             >
-              <CheckCircle className="w-3.5 h-3.5" /> Publish Event
+              <CheckCircle className="w-3.5 h-3.5" /> Approve Event
             </button>
           )}
 
@@ -274,6 +340,29 @@ export const OrganizerEventManage = () => {
           )}
         </div>
       </div>
+
+      {/* Pending Approval Alert Banner */}
+      {event.status === 'PENDING_APPROVAL' && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <h4 className="text-xs font-bold text-amber-300">Pending IT Administration Approval</h4>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                This event is under review by MVJCE IT Administration. Once approved, it will be published to all students on the campus platform.
+              </p>
+            </div>
+          </div>
+          {user?.role === 'ADMIN' && (
+            <button
+              onClick={handleApproveEvent}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-md shadow-emerald-600/30"
+            >
+              <CheckCircle className="w-3.5 h-3.5" /> Approve Now
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Tabs Navigation Bar */}
       <div className="flex items-center gap-1 p-1.5 rounded-2xl bg-slate-900 border border-slate-800 overflow-x-auto scrollbar-none">
@@ -661,6 +750,59 @@ export const OrganizerEventManage = () => {
             </div>
           </div>
 
+          {/* Event RSVP & Attendance Managers (2 Emails) */}
+          <div className="p-6 rounded-3xl glass-card border border-indigo-500/30 bg-indigo-950/20 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                  <Mail className="w-3.5 h-3.5" /> Event-Specific Check-In Permissions
+                </span>
+                <h3 className="text-base font-extrabold text-white">Event RSVP & Attendance Handlers (2 Emails)</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  These 2 accounts have direct authority to scan QR tickets, view registrations, and manage attendance for this event.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveRsvpManagers} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              <div className="sm:col-span-5">
+                <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  RSVP Manager 1 Email
+                </label>
+                <input
+                  type="email"
+                  value={rsvpEmail1}
+                  onChange={(e) => setRsvpEmail1(e.target.value)}
+                  placeholder="e.g. student@mvjce.edu.in"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              <div className="sm:col-span-5">
+                <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  RSVP Manager 2 Email
+                </label>
+                <input
+                  type="email"
+                  value={rsvpEmail2}
+                  onChange={(e) => setRsvpEmail2(e.target.value)}
+                  placeholder="e.g. volunteer@mvjce.edu.in"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <button
+                  type="submit"
+                  disabled={savingRsvp}
+                  className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/30"
+                >
+                  {savingRsvp ? 'Saving...' : 'Save Handlers'}
+                </button>
+              </div>
+            </form>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Assign Co-Organizer Form */}
             <div className="lg:col-span-5">
@@ -671,7 +813,7 @@ export const OrganizerEventManage = () => {
                     Assign Co-Organizer
                   </h3>
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Grant event management privileges to a student or team member using their email address.
+                    Grant club event management privileges to a student or team member using their email address.
                   </p>
                 </div>
 
@@ -684,7 +826,7 @@ export const OrganizerEventManage = () => {
                       type="email"
                       value={assignEmail}
                       onChange={(e) => setAssignEmail(e.target.value)}
-                      placeholder="e.g. devon.lane@campus.edu or student@evntpulse.demo"
+                      placeholder="e.g. student@mvjce.edu.in"
                       className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                       required
                     />

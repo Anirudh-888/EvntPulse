@@ -37,22 +37,12 @@ export const Navbar = () => {
     navigate('/');
   };
 
-  const handleQuickDemoSwitch = async (role) => {
+  const handleQuickDemoSwitch = async (email, pw, targetPath, roleLabel) => {
     setDemoSwitchOpen(false);
     try {
-      if (role === 'STUDENT') {
-        await login('student@evntpulse.demo', 'Student@123');
-        toastSuccess('Switched to Demo Student');
-        navigate('/student/dashboard');
-      } else if (role === 'ORGANIZER') {
-        await login('organizer@evntpulse.demo', 'Organizer@123');
-        toastSuccess('Switched to Demo Organizer');
-        navigate('/organizer/dashboard');
-      } else if (role === 'ADMIN') {
-        await login('admin@evntpulse.demo', 'Admin@123');
-        toastSuccess('Switched to Demo Admin');
-        navigate('/admin/dashboard');
-      }
+      await login(email, pw);
+      toastSuccess(`Switched to ${roleLabel}`);
+      navigate(targetPath);
     } catch (err) {
       toastError(err.friendlyMessage || 'Quick switch failed');
     }
@@ -197,31 +187,54 @@ export const Navbar = () => {
               <ChevronDown className="w-3 h-3 text-indigo-400" />
             </button>
             {demoSwitchOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-xl glass-card border border-slate-700 p-1.5 shadow-2xl z-50">
-                <p className="px-2.5 py-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  Quick Demo Switch
+              <div className="absolute right-0 mt-2 w-64 rounded-xl glass-card border border-slate-700 p-2 shadow-2xl z-50 max-h-96 overflow-y-auto">
+                <p className="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Platform Admin
                 </p>
                 <button
-                  onClick={() => handleQuickDemoSwitch('STUDENT')}
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-indigo-600 hover:text-white transition-colors flex items-center justify-between"
+                  onClick={() => handleQuickDemoSwitch('it.admin@mvjce.edu.in', 'Admin@123', '/admin/dashboard', 'IT Admin')}
+                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-amber-500/20 hover:text-amber-300 transition-colors flex items-center justify-between"
                 >
-                  <span>Student Persona</span>
-                  <span className="text-[10px] text-indigo-300">Devon</span>
+                  <span className="font-semibold text-amber-300">MVJCE IT Admin</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Full Control</span>
                 </button>
+
+                <div className="my-1.5 border-t border-slate-800" />
+                <p className="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Student Account
+                </p>
                 <button
-                  onClick={() => handleQuickDemoSwitch('ORGANIZER')}
+                  onClick={() => handleQuickDemoSwitch('student@mvjce.edu.in', 'Student@123', '/student/dashboard', 'Student (Arjun)')}
                   className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-indigo-600 hover:text-white transition-colors flex items-center justify-between"
                 >
-                  <span>Organizer Persona</span>
-                  <span className="text-[10px] text-indigo-300">Sarah</span>
+                  <span>Arjun Sharma</span>
+                  <span className="text-[10px] text-indigo-300">Student</span>
                 </button>
-                <button
-                  onClick={() => handleQuickDemoSwitch('ADMIN')}
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-indigo-600 hover:text-white transition-colors flex items-center justify-between"
-                >
-                  <span>Admin Persona</span>
-                  <span className="text-[10px] text-indigo-300">Alex</span>
-                </button>
+
+                <div className="my-1.5 border-t border-slate-800" />
+                <p className="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  MVJCE Club Organizers
+                </p>
+                {[
+                  { name: 'SDC MVJCE', email: 'sdc@mvjce.edu.in' },
+                  { name: 'Google Developers Club', email: 'gdc@mvjce.edu.in' },
+                  { name: 'AWS Student Builder', email: 'aws.club@mvjce.edu.in' },
+                  { name: 'TedX Club MVJCE', email: 'tedx@mvjce.edu.in' },
+                  { name: 'NIC Club MVJCE', email: 'nic@mvjce.edu.in' },
+                  { name: 'Raagabhinaya Club', email: 'raagabhinaya@mvjce.edu.in' },
+                  { name: 'Dhwani Club MVJCE', email: 'dhwani@mvjce.edu.in' },
+                  { name: 'Saahitya Club MVJCE', email: 'saahitya@mvjce.edu.in' },
+                  { name: 'Toastmasters Club', email: 'toastmasters@mvjce.edu.in' },
+                ].map((club) => (
+                  <button
+                    key={club.email}
+                    onClick={() => handleQuickDemoSwitch(club.email, 'Club@123', '/organizer/dashboard', club.name)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-indigo-600/50 hover:text-white transition-colors flex items-center justify-between"
+                  >
+                    <span className="truncate pr-2">{club.name}</span>
+                    <span className="text-[10px] text-slate-400 font-mono shrink-0">{club.email.split('@')[0]}</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>

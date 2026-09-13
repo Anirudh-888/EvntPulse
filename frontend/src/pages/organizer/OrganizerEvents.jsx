@@ -72,7 +72,7 @@ export const OrganizerEvents = () => {
 
         {/* Status Pills */}
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 overflow-x-auto w-full sm:w-auto">
-          {['ALL', 'PUBLISHED', 'DRAFT', 'COMPLETED', 'CANCELLED'].map((s) => (
+          {['ALL', 'PUBLISHED', 'PENDING_APPROVAL', 'DRAFT', 'COMPLETED', 'CANCELLED'].map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -82,7 +82,7 @@ export const OrganizerEvents = () => {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {s}
+              {s === 'PENDING_APPROVAL' ? 'Pending Approval' : s}
             </button>
           ))}
         </div>
