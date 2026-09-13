@@ -12,10 +12,22 @@ from app.models.poll import Poll, PollOption, PollResponse, PollStatus
 from app.models.feedback import Feedback
 from app.models.notification import Notification
 
-def seed_database():
+def seed_database(drop_existing: bool = True):
     print("Starting database seeding for EvntPulse (MVJCE Ecosystem)...")
-    Base.metadata.drop_all(bind=engine)
+    if drop_existing:
+        Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+
+def seed_if_empty():
+    db = SessionLocal()
+    try:
+        if db.query(User).count() == 0:
+            print("[AUTO-SEED] Fresh database detected. Automatically seeding MVJCE ecosystem...")
+            seed_database(drop_existing=False)
+    except Exception as err:
+        print(f"[AUTO-SEED] Error checking or seeding database: {err}")
+    finally:
+        db.close()
 
     db = SessionLocal()
     now = datetime.now(timezone.utc)

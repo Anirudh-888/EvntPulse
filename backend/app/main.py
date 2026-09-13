@@ -10,6 +10,13 @@ from app.api import api_router
 # Create database tables automatically
 Base.metadata.create_all(bind=engine)
 
+# Auto-seed MVJCE clubs, IT admin, and demo events if fresh database
+try:
+    from app.seed import seed_if_empty
+    seed_if_empty()
+except Exception as e:
+    print(f"Auto-seed check notice: {e}")
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Smart Campus & Club Event Intelligence Hub — The Campus Event Operating System.",
@@ -49,13 +56,48 @@ def health_check():
         "version": "1.0.0"
     }
 
-@app.get("/", tags=["Root"])
-def root():
-    return {
-        "message": "Welcome to EvntPulse API — Smart Campus & Club Event Intelligence Hub",
-        "docs": "/docs",
-        "api_v1": settings.API_V1_STR
-    }
+# Serve frontend build if dist directory exists
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# Check potential locations for frontend/dist
+possible_dist_paths = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend/dist")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist")),
+    os.path.abspath(os.path.join(os.getcwd(), "frontend/dist")),
+    os.path.abspath(os.path.join(os.getcwd(), "dist")),
+]
+
+dist_dir = next((p for p in possible_dist_paths if os.path.isdir(p)), None)
+
+if dist_dir:
+    assets_dir = os.path.join(dist_dir, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_root():
+        return FileResponse(os.path.join(dist_dir, "index.html"))
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(full_path: str):
+        # Allow API and Docs to pass through
+        if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("redoc") or full_path.startswith("health"):
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+        
+        file_path = os.path.join(dist_dir, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(dist_dir, "index.html"))
+else:
+    @app.get("/", tags=["Root"])
+    def root():
+        return {
+            "message": "Welcome to EvntPulse API — Smart Campus & Club Event Intelligence Hub",
+            "docs": "/docs",
+            "api_v1": settings.API_V1_STR
+        }
 
 if __name__ == "__main__":
     import uvicorn
