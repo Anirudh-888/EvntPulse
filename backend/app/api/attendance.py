@@ -8,6 +8,8 @@ from app.schemas.attendance import CheckInRequest, CheckInResponse, AttendanceSt
 from app.services import attendance_service
 from app.api.deps import get_current_user, require_roles
 
+from app.utils.permissions import can_manage_event
+
 router = APIRouter(tags=["Attendance"])
 
 @router.post("/attendance/check-in", response_model=CheckInResponse)
@@ -35,7 +37,7 @@ def get_attendance_records(
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-    if current_user.role != UserRole.ADMIN and event.club.owner_id != current_user.id:
+    if not can_manage_event(current_user, event):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
 
     return attendance_service.get_event_attendees(db, event_id)

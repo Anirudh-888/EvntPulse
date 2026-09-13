@@ -24,8 +24,23 @@ def can_manage_club(user: User, club: Club) -> bool:
 def can_manage_event(user: User, event: Event) -> bool:
     """
     Check if a user has management permissions for an event:
-    Verifies if user can manage the event's host club.
+    - User is an Admin
+    - User is designated as one of the 2 RSVP managers (rsvp_email_1 or rsvp_email_2)
+    - User can manage the event's host club
     """
-    if not user or not event or not event.club:
+    if not user or not event:
         return False
-    return can_manage_club(user, event.club)
+    if user.role == UserRole.ADMIN:
+        return True
+    
+    # Check RSVP manager emails
+    user_email = (user.email or "").strip().lower()
+    if user_email:
+        if event.rsvp_email_1 and event.rsvp_email_1.strip().lower() == user_email:
+            return True
+        if event.rsvp_email_2 and event.rsvp_email_2.strip().lower() == user_email:
+            return True
+
+    if event.club:
+        return can_manage_club(user, event.club)
+    return False

@@ -46,7 +46,8 @@ def list_events(
         category=category,
         club_id=club_id,
         status_filter=status_filter,
-        only_published=only_pub
+        only_published=only_pub,
+        current_user=current_user
     )
     return [enrich_event_response(e, db) for e in events]
 
@@ -104,6 +105,33 @@ def delete_event(
 ):
     event_service.delete_event(db, event_id, current_user)
     return None
+
+@router.post("/{event_id}/submit-approval", response_model=EventResponse)
+def submit_event_for_approval(
+    event_id: int,
+    current_user: User = Depends(require_roles(UserRole.ORGANIZER, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    event = event_service.change_event_status(db, event_id, EventStatus.PENDING_APPROVAL, current_user)
+    return enrich_event_response(event, db)
+
+@router.post("/{event_id}/approve", response_model=EventResponse)
+def approve_event(
+    event_id: int,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    event = event_service.change_event_status(db, event_id, EventStatus.PUBLISHED, current_user)
+    return enrich_event_response(event, db)
+
+@router.post("/{event_id}/reject", response_model=EventResponse)
+def reject_event(
+    event_id: int,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    event = event_service.change_event_status(db, event_id, EventStatus.DRAFT, current_user)
+    return enrich_event_response(event, db)
 
 @router.post("/{event_id}/publish", response_model=EventResponse)
 def publish_event(

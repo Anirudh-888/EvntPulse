@@ -21,13 +21,30 @@ def get_events(
     category: Optional[EventCategory] = None,
     club_id: Optional[int] = None,
     status_filter: Optional[EventStatus] = None,
-    only_published: bool = True
+    only_published: bool = True,
+    current_user: Optional[User] = None
 ) -> List[Event]:
     query = db.query(Event)
 
     if only_published:
         query = query.filter(Event.status.in_([EventStatus.PUBLISHED, EventStatus.ONGOING, EventStatus.COMPLETED]))
-    elif status_filter:
+    else:
+        # Management view
+        if current_user and current_user.role == UserRole.ORGANIZER:
+            user_email = (current_user.email or "").strip().lower()
+            owned_club_ids = [c.id for c in current_user.clubs_owned]
+            org_club_ids = [co.club_id for co in current_user.clubs_organized]
+            allowed_club_ids = list(set(owned_club_ids + org_club_ids))
+
+            query = query.filter(
+                or_(
+                    Event.club_id.in_(allowed_club_ids) if allowed_club_ids else False,
+                    Event.rsvp_email_1.ilike(user_email),
+                    Event.rsvp_email_2.ilike(user_email)
+                )
+            )
+
+    if status_filter:
         query = query.filter(Event.status == status_filter)
 
     if club_id:
@@ -48,6 +65,13 @@ def get_events(
 
     return query.order_by(Event.start_time.asc()).offset(skip).limit(limit).all()
 
+def promote_rsvp_managers(db: Session, email1: Optional[str], email2: Optional[str]):
+    for email in [email1, email2]:
+        if email and email.strip():
+            target_user = db.query(User).filter(User.email.ilike(email.strip())).first()
+            if target_user and target_user.role == UserRole.STUDENT:
+                target_user.role = UserRole.ORGANIZER
+
 def create_event(db: Session, event_in: EventCreate, current_user: User) -> Event:
     club = db.query(Club).filter(Club.id == event_in.club_id).first()
     if not club:
@@ -60,6 +84,14 @@ def create_event(db: Session, event_in: EventCreate, current_user: User) -> Even
             detail="You can only create events for clubs you manage or organize"
         )
 
+    status_to_assign = event_in.status or EventStatus.DRAFT
+
+    clean_rsvp1 = event_in.rsvp_email_1.strip() if event_in.rsvp_email_1 else None
+    clean_rsvp2 = event_in.rsvp_email_2.strip() if event_in.rsvp_email_2 else None
+
+    # Promote RSVP managers to ORGANIZER role if they are registered as STUDENT
+    promote_rsvp_managers(db, clean_rsvp1, clean_rsvp2)
+
     db_event = Event(
         club_id=event_in.club_id,
         title=event_in.title,
@@ -71,7 +103,9 @@ def create_event(db: Session, event_in: EventCreate, current_user: User) -> Even
         registration_deadline=event_in.registration_deadline,
         capacity=event_in.capacity,
         poster_url=event_in.poster_url,
-        status=event_in.status or EventStatus.DRAFT
+        rsvp_email_1=clean_rsvp1,
+        rsvp_email_2=clean_rsvp2,
+        status=status_to_assign
     )
     db.add(db_event)
     db.commit()
@@ -91,7 +125,11 @@ def update_event(db: Session, event_id: int, event_in: EventUpdate, current_user
 
     update_data = event_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
+        if field in ["rsvp_email_1", "rsvp_email_2"] and value:
+            value = value.strip()
         setattr(event, field, value)
+
+    promote_rsvp_managers(db, event.rsvp_email_1, event.rsvp_email_2)
 
     db.commit()
     db.refresh(event)

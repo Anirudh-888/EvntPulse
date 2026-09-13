@@ -14,6 +14,8 @@ class EventBase(BaseModel):
     registration_deadline: datetime
     capacity: int = Field(default=100, gt=0)
     poster_url: Optional[str] = None
+    rsvp_email_1: Optional[str] = None
+    rsvp_email_2: Optional[str] = None
 
 class EventCreate(EventBase):
     club_id: int
@@ -38,6 +40,8 @@ class EventUpdate(BaseModel):
     capacity: Optional[int] = Field(default=None, gt=0)
     poster_url: Optional[str] = None
     status: Optional[EventStatus] = None
+    rsvp_email_1: Optional[str] = None
+    rsvp_email_2: Optional[str] = None
 
 class EventResponse(EventBase):
     id: int

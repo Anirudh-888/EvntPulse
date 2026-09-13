@@ -10,7 +10,7 @@ class ClubBase(BaseModel):
     logo_url: Optional[str] = None
 
 class ClubCreate(ClubBase):
-    pass
+    owner_email: Optional[str] = None
 
 class ClubUpdate(BaseModel):
     name: Optional[str] = None

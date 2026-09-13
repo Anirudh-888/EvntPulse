@@ -6,6 +6,7 @@ from app.core.database import Base
 
 class EventStatus(str, enum.Enum):
     DRAFT = "DRAFT"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
     PUBLISHED = "PUBLISHED"
     ONGOING = "ONGOING"
     COMPLETED = "COMPLETED"
@@ -37,6 +38,8 @@ class Event(Base):
     capacity = Column(Integer, nullable=False, default=100)
     poster_url = Column(String(500), nullable=True)
     status = Column(Enum(EventStatus), default=EventStatus.DRAFT, nullable=False, index=True)
+    rsvp_email_1 = Column(String(150), nullable=True)
+    rsvp_email_2 = Column(String(150), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 

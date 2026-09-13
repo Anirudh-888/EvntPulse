@@ -227,12 +227,20 @@ def create_club(
         if existing_email:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A club with this email already exists")
 
+    owner_id = current_user.id
+    if club_in.owner_email and club_in.owner_email.strip():
+        target_owner = db.query(User).filter(User.email.ilike(club_in.owner_email.strip())).first()
+        if target_owner:
+            owner_id = target_owner.id
+            if target_owner.role == UserRole.STUDENT:
+                target_owner.role = UserRole.ORGANIZER
+
     new_club = Club(
         name=club_in.name,
         email=club_in.email.strip() if club_in.email else None,
         description=club_in.description,
         logo_url=club_in.logo_url,
-        owner_id=current_user.id
+        owner_id=owner_id
     )
     db.add(new_club)
     db.commit()
@@ -261,3 +269,17 @@ def update_club(
     db.commit()
     db.refresh(club)
     return club
+
+@router.delete("/{club_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_club(
+    club_id: int,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    club = db.query(Club).filter(Club.id == club_id).first()
+    if not club:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Club not found")
+
+    db.delete(club)
+    db.commit()
+    return None
