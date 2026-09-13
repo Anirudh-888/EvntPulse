@@ -2,10 +2,22 @@ import os
 from pydantic_settings import BaseSettings
 from typing import List
 
+def _get_default_database_url() -> str:
+    env_url = os.getenv("DATABASE_URL")
+    if env_url:
+        return env_url
+    if os.path.exists("/home"):
+        try:
+            os.makedirs("/home/data", exist_ok=True)
+            return "sqlite:////home/data/evntpulse.db"
+        except Exception:
+            pass
+    return "sqlite:///./evntpulse.db"
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "EvntPulse"
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./evntpulse.db")
+    DATABASE_URL: str = _get_default_database_url()
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "evntpulse-super-secret-jwt-key-change-in-production-2026")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")) # 24 hours
