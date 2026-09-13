@@ -98,17 +98,25 @@ EvntPulse/
 
 ---
 
-## 4. Demo Accounts & Credentials
+## 4. MVJCE College Accounts & Credentials
 
-The database is pre-seeded with realistic clubs, events, registrations, checked-in tickets, polls, and feedback reviews. Use these accounts for evaluation:
+The platform is configured with official **MVJCE (mvjce.edu.in)** club accounts, IT administrator oversight, and isolated permissions:
 
-| Role | Email | Password | Persona |
+| Role | Email | Password | Scope & Permissions |
 |---|---|---|---|
-| **Student** | `student@evntpulse.demo` | `Student@123` | Devon Patel (CS Sophomore) |
-| **Organizer** | `organizer@evntpulse.demo` | `Organizer@123` | Sarah Jenkins (GDSC Lead) |
-| **Admin** | `admin@evntpulse.demo` | `Admin@123` | Alex Mercer (Campus Admin) |
+| **IT Admin** | `it.admin@mvjce.edu.in` | `Admin@123` | **Full Platform & Event Approval Control**: Access all 9 clubs, approve/reject event submissions, onboard new clubs, delete clubs. |
+| **Club Organizer** | `sdc@mvjce.edu.in` | `Club@123` | **Software Development Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Club Organizer** | `gdc@mvjce.edu.in` | `Club@123` | **Google Developers Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Club Organizer** | `aws.club@mvjce.edu.in` | `Club@123` | **AWS Student Builder Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Club Organizer** | `tedx@mvjce.edu.in` | `Club@123` | **TedX Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Club Organizer** | `nic@mvjce.edu.in` | `Club@123` | **NIC Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Club Organizer** | `raagabhinaya@mvjce.edu.in` | `Club@123` | **Raagabhinaya Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Club Organizer** | `dhwani@mvjce.edu.in` | `Club@123` | **Dhwani Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Club Organizer** | `saahitya@mvjce.edu.in` | `Club@123` | **Saahitya Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Club Organizer** | `toastmasters@mvjce.edu.in` | `Club@123` | **Toastmasters Club MVJCE**: Post events, take attendance, add 2 RSVP manager emails per event. |
+| **Student** | `student@mvjce.edu.in` | `Student@123` | **Student (Arjun Sharma)**: RSVP for events, get digital QR tickets, vote on live polls, submit feedback. |
 
-> **Pro-Tip**: The navigation bar includes a **"Demo Roles"** 1-click switcher so you can alternate between Student, Organizer, and Admin without retyping credentials.
+> **Pro-Tip**: The navigation bar includes a **"Demo Roles"** 1-click switcher to test IT Admin, Student, or any of the 9 MVJCE clubs instantaneously.
 
 ---
 
@@ -174,10 +182,10 @@ All 12 critical integration tests run against an isolated SQLite test database a
 ## 7. Critical Demonstration Flow
 
 Follow this end-to-end user journey to evaluate the system:
-1. **Discover Event**: Visit `http://127.0.0.1:5173/`, explore upcoming events, or use search and category chips.
-2. **Student RSVP**: Click on an event (e.g., *AI Innovation Summit 2026*). Sign in as **Student** (`student@evntpulse.demo`), click **"Register Now"**, and receive an instant digital QR ticket.
+1. **Discover Event**: Visit `http://127.0.0.1:5173/`, explore upcoming events across the 9 MVJCE clubs, or use search and category chips.
+2. **Student RSVP**: Click on an event (e.g., *National Hackathon 2026*). Sign in as **Student** (`student@mvjce.edu.in`), click **"Register Now"**, and receive an instant digital QR ticket.
 3. **Inspect Ticket**: Navigate to **My Tickets** to view the passcard and enlarge the verified QR barcode.
-4. **Organizer Switch**: Use the **Demo Roles** switcher in the navbar to switch to **Organizer** (`organizer@evntpulse.demo`).
+4. **Organizer Switch**: Use the **Demo Roles** switcher in the navbar to switch to a Club Organizer (e.g., `sdc@mvjce.edu.in`).
 5. **Venue Check-in**: Open **Organizer Hub** -> select the event -> open the **Check-In & Scanner** tab. Enter the student's ticket code (`EP-...`) or scan the QR code.
    - Status updates instantly to `SUCCESS` with confetti.
    - Attendance counter and turnout rate increment in real-time.
