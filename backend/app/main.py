@@ -10,6 +10,18 @@ from app.api import api_router
 # Create database tables automatically
 Base.metadata.create_all(bind=engine)
 
+# Backward-compatibility column migration for SQLite
+try:
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info(clubs)"))
+        existing_cols = [row[1] for row in result.fetchall()]
+        if existing_cols and "email" not in existing_cols:
+            conn.execute(text("ALTER TABLE clubs ADD COLUMN email VARCHAR(150)"))
+            conn.commit()
+except Exception as e:
+    print(f"Column migration notice: {e}")
+
 # Auto-seed MVJCE clubs, IT admin, and demo events if fresh database
 try:
     from app.seed import seed_if_empty
