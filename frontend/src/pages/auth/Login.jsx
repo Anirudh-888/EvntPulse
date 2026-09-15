@@ -175,8 +175,8 @@ export const Login = () => {
   const getMascotMessage = () => {
     if (mascotState === 'success') return 'Access Granted! Opening dashboard... 🎉';
     if (mascotState === 'password') return 'I respect your privacy';
-    if (mascotState === 'email') return 'Noting you unique one ❤️';
-    return 'Noting you unique one ❤️';
+    if (mascotState === 'email') return 'Noting you unique one';
+    return 'Noting you unique one';
   };
 
   // Sign In submit handler
