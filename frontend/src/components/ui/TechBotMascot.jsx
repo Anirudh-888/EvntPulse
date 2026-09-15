@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
  * - Walks ONLY when the user is typing (isTyping === true)
  * - Stands completely still on the border when not typing
  * - Covers face/eyes on password with "I respect your privacy"
- * - Displays "Noting you unique one ❤️" when on email
+ * - Displays "Noting you unique one" when on email
  * - Opens hands wide in victory on login success
  */
 export const TechBotMascot = ({
