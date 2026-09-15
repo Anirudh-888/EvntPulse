@@ -179,6 +179,13 @@ export const Login = () => {
     return 'Noting you unique one';
   };
 
+  // Robot dynamic handheld sign
+  const getMascotSign = () => {
+    if (mascotState === 'email') return 'Campus Mail';
+    if (mascotState === 'password') return 'Password';
+    return '';
+  };
+
   // Sign In submit handler
   const handleSignInSubmit = async (e) => {
     e?.preventDefault();
@@ -557,6 +564,7 @@ export const Login = () => {
                     targetState={mascotState}
                     isTyping={isTyping}
                     message={getMascotMessage()}
+                    signText={getMascotSign()}
                   />
                 </div>
 
@@ -564,10 +572,7 @@ export const Login = () => {
                   <form onSubmit={handleSignInSubmit} className="space-y-6 relative z-10">
                     {/* Email field container */}
                     <div className="relative">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                          Campus Email
-                        </label>
+                      <div className="flex items-center justify-end h-4 mb-2">
                         {mascotState === 'email' && (
                           <span className="text-[10px] text-cyan-400 font-mono font-bold flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
@@ -580,6 +585,7 @@ export const Login = () => {
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         <input
                           type="email"
+                          aria-label="Campus Mail"
                           value={email}
                           onChange={handleEmailChange}
                           onFocus={() => {
@@ -603,10 +609,7 @@ export const Login = () => {
 
                     {/* Password field container */}
                     <div className="relative">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                          Password
-                        </label>
+                      <div className="flex items-center justify-end h-4 mb-2">
                         {mascotState === 'password' && (
                           <span className="text-[10px] text-purple-400 font-mono font-bold flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
@@ -619,6 +622,7 @@ export const Login = () => {
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         <input
                           type="password"
+                          aria-label="Password"
                           value={password}
                           onChange={handlePasswordChange}
                           onFocus={() => {
@@ -701,13 +705,19 @@ export const Login = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        Campus Email
-                      </label>
+                      <div className="flex items-center justify-end h-4 mb-1">
+                        {mascotState === 'email' && (
+                          <span className="text-[10px] text-cyan-400 font-mono font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                            {isTyping ? 'Walking...' : 'On border'}
+                          </span>
+                        )}
+                      </div>
                       <div className="relative" ref={emailBoxRef}>
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                           type="email"
+                          aria-label="Campus Mail"
                           value={email}
                           onChange={handleEmailChange}
                           onFocus={() => {
@@ -726,13 +736,19 @@ export const Login = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        Password
-                      </label>
+                      <div className="flex items-center justify-end h-4 mb-1">
+                        {mascotState === 'password' && (
+                          <span className="text-[10px] text-purple-400 font-mono font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                            Eyes covered 🙈
+                          </span>
+                        )}
+                      </div>
                       <div className="relative" ref={passwordBoxRef}>
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                           type="password"
+                          aria-label="Password"
                           value={password}
                           onChange={handlePasswordChange}
                           onFocus={() => {
