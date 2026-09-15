@@ -173,7 +173,7 @@ export const Login = () => {
 
   // Robot dynamic speech messages requested by user
   const getMascotMessage = () => {
-    if (mascotState === 'success') return 'Access Granted! Opening dashboard... 🎉';
+    if (mascotState === 'success') return 'Access Granted! Opening dashboard...';
     if (mascotState === 'password') return 'I respect your privacy';
     if (mascotState === 'email') return 'Noting you unique one';
     return 'Noting you unique one';
