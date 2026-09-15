@@ -84,13 +84,14 @@ export const Login = () => {
   const [year, setYear] = useState('Year 2');
   const [loading, setLoading] = useState(false);
 
-  // Dynamic Mascot States: 'idle' | 'email' | 'password' | 'success'
-  const [mascotState, setMascotState] = useState('idle');
+  // Dynamic Mascot States: 'idle' | 'name' | 'email' | 'password' | 'success'
+  const [mascotState, setMascotState] = useState(searchParams.get('mode') === 'signup' ? 'name' : 'email');
   const [isTyping, setIsTyping] = useState(false);
   const typingTimerRef = useRef(null);
 
   // DOM Refs to measure exact border coordinates of input boxes
   const formStageRef = useRef(null);
+  const nameBoxRef = useRef(null);
   const emailBoxRef = useRef(null);
   const passwordBoxRef = useRef(null);
   const robotRef = useRef(null);
@@ -114,7 +115,16 @@ export const Login = () => {
   const updateRobotBorderPosition = () => {
     if (!formStageRef.current) return;
     const stageRect = formStageRef.current.getBoundingClientRect();
-    const activeBox = mascotState === 'password' ? passwordBoxRef.current : emailBoxRef.current;
+    let activeBox = null;
+    if (mascotState === 'password') {
+      activeBox = passwordBoxRef.current;
+    } else if (mascotState === 'name') {
+      activeBox = nameBoxRef.current;
+    } else if (mascotState === 'email') {
+      activeBox = emailBoxRef.current;
+    } else {
+      activeBox = mode === 'signup' ? (nameBoxRef.current || emailBoxRef.current) : emailBoxRef.current;
+    }
 
     if (activeBox) {
       const boxRect = activeBox.getBoundingClientRect();
@@ -129,7 +139,7 @@ export const Login = () => {
       }
 
       // Horizontal positioning: walk from left to right when typing, and step back on backspace!
-      const currentText = mascotState === 'password' ? password : email;
+      const currentText = mascotState === 'password' ? password : mascotState === 'name' ? name : email;
       const boxWidth = boxRect.width || 420;
       const startX = 45; // Start position near icon
       const maxWalk = Math.max(90, boxWidth - 60);
@@ -145,12 +155,22 @@ export const Login = () => {
 
   useEffect(() => {
     updateRobotBorderPosition();
-  }, [mascotState, mode, email, password]);
+  }, [mascotState, mode, email, password, name]);
 
   useEffect(() => {
     window.addEventListener('resize', updateRobotBorderPosition);
     return () => window.removeEventListener('resize', updateRobotBorderPosition);
   }, []);
+
+  // Handle typing detection with auto-stop timer for Name
+  const handleNameChange = (e) => {
+    setName(e.target.value);
+    setIsTyping(true);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      setIsTyping(false); // Stop walking when typing pauses
+    }, 350);
+  };
 
   // Handle typing detection with auto-stop timer
   const handleEmailChange = (e) => {
@@ -171,19 +191,21 @@ export const Login = () => {
     }, 350);
   };
 
-  // Robot dynamic speech messages requested by user
+  // Robot dynamic speech messages (Strictly NO emojis!)
   const getMascotMessage = () => {
     if (mascotState === 'success') return 'Access Granted! Opening dashboard...';
     if (mascotState === 'password') return 'I respect your privacy';
     if (mascotState === 'email') return 'Noting you unique one';
-    return 'Noting you unique one';
+    if (mascotState === 'name') return 'May I know you please';
+    return mode === 'signup' ? 'May I know you please' : 'Noting you unique one';
   };
 
   // Robot dynamic handheld sign
   const getMascotSign = () => {
+    if (mascotState === 'name') return 'May I know you please';
     if (mascotState === 'email') return 'Campus Mail';
     if (mascotState === 'password') return 'Password';
-    return '';
+    return mode === 'signup' ? 'May I know you please' : 'Campus Mail';
   };
 
   // Sign In submit handler
@@ -520,7 +542,7 @@ export const Login = () => {
                   type="button"
                   onClick={() => {
                     setMode('signin');
-                    setMascotState('idle');
+                    setMascotState('email');
                   }}
                   className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     mode === 'signin'
@@ -534,7 +556,7 @@ export const Login = () => {
                   type="button"
                   onClick={() => {
                     setMode('signup');
-                    setMascotState('idle');
+                    setMascotState('name');
                   }}
                   className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     mode === 'signup'
@@ -688,17 +710,35 @@ export const Login = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
-                        Full Name
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <div className="flex items-center justify-end h-4 mb-1">
+                        {mascotState === 'name' && (
+                          <span className="text-[10px] text-indigo-400 font-mono font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                            {isTyping ? 'Walking...' : 'On border'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative" ref={nameBoxRef}>
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         <input
                           type="text"
+                          aria-label="Full Name"
                           value={name}
-                          onChange={(e) => setName(e.target.value)}
+                          onChange={handleNameChange}
+                          onFocus={() => {
+                            setMascotState('name');
+                            setIsTyping(false);
+                          }}
+                          onBlur={() => {
+                            setMascotState(mode === 'signup' ? 'name' : 'email');
+                            setIsTyping(false);
+                          }}
                           placeholder="Devon Vance"
-                          className="w-full pl-11 pr-3 py-2.5 rounded-lg bg-slate-950/60 border border-white/10 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                          className={`w-full pl-11 pr-3 py-2.5 rounded-lg bg-slate-950/60 border text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all duration-300 ${
+                            mascotState === 'name'
+                              ? 'border-indigo-400 ring-2 ring-indigo-400/20 shadow-[0_0_15px_rgba(99,102,241,0.25)]'
+                              : 'border-white/10 focus:border-indigo-500'
+                          }`}
                           required
                         />
                       </div>

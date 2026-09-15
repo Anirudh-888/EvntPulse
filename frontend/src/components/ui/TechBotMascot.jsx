@@ -14,6 +14,7 @@ export const TechBotMascot = ({
   targetState = 'idle', // 'idle' | 'email' | 'password' | 'success'
   isTyping = false,
   message = '',
+  signText = '',
 }) => {
   const [stepCycle, setStepCycle] = useState(0);
 
@@ -32,7 +33,12 @@ export const TechBotMascot = ({
 
   const isPassword = targetState === 'password';
   const isEmail = targetState === 'email';
+  const isName = targetState === 'name';
   const isSuccess = targetState === 'success';
+
+  // Active handheld signboard text ('May I know you please' | 'Campus Mail' | 'Password')
+  const activeSign = signText || (isName ? 'May I know you please' : isEmail ? 'Campus Mail' : isPassword ? 'Password' : '');
+  const showSign = Boolean(activeSign && !isSuccess);
 
   // Feet walk ONLY when user is typing!
   const isWalking = isTyping;
@@ -52,11 +58,13 @@ export const TechBotMascot = ({
     ? '#A855F7' // purple
     : isEmail
     ? '#00E5FF' // vivid cyan
+    : isName
+    ? '#818CF8' // vibrant indigo
     : '#6366F1'; // indigo
 
   return (
     <div className="relative pointer-events-none select-none flex flex-col items-center">
-      {/* Dynamic Frosted Speech Bubble */}
+      {/* Dynamic Frosted Speech Bubble (Strictly clean dialogue, no emojis) */}
       {message && (
         <div
           className={`mb-1.5 px-3 py-1 rounded-2xl text-[11px] font-bold tracking-wide shadow-2xl border backdrop-blur-xl transition-all duration-300 transform ${
@@ -66,7 +74,7 @@ export const TechBotMascot = ({
               ? 'bg-purple-950/90 text-purple-300 border-purple-500/50 shadow-purple-500/30'
               : isEmail
               ? 'bg-cyan-950/90 text-cyan-300 border-cyan-500/50 shadow-cyan-500/30'
-              : 'bg-slate-900/90 text-indigo-300 border-white/15 shadow-indigo-500/20'
+              : 'bg-indigo-950/90 text-indigo-300 border-indigo-500/50 shadow-indigo-500/20'
           }`}
         >
           <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -81,7 +89,7 @@ export const TechBotMascot = ({
                 ? 'bg-purple-950 border-purple-500/50'
                 : isEmail
                 ? 'bg-cyan-950 border-cyan-500/50'
-                : 'bg-slate-900 border-white/15'
+                : 'bg-indigo-950 border-indigo-500/50'
             }`}
           />
         </div>
@@ -94,6 +102,28 @@ export const TechBotMascot = ({
           transform: `translateY(${bodyBobY}px) rotate(${bodyTilt}deg)`,
         }}
       >
+        {/* Prominent High-Tech Handheld Signboard (Always 100% visible and crisp) */}
+        {showSign && (
+          <div className="absolute left-[78%] top-[18%] -translate-y-1/2 z-30 flex items-center pointer-events-none transition-all duration-300 transform origin-bottom-left">
+            {/* Pole connecting to robot's hand */}
+            <div className="absolute -left-1.5 top-3 w-[3px] h-12 bg-gradient-to-b from-slate-400 via-slate-600 to-slate-800 rounded-full shadow-md" />
+
+            {/* Glowing Digital Signboard Badge */}
+            <div
+              className={`relative px-3 py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold tracking-wider uppercase border shadow-2xl backdrop-blur-xl whitespace-nowrap flex items-center gap-1.5 transition-all duration-300 ${
+                isPassword
+                  ? 'bg-purple-950/95 text-purple-200 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.45)]'
+                  : isEmail
+                  ? 'bg-cyan-950/95 text-cyan-200 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.45)]'
+                  : 'bg-indigo-950/95 text-indigo-200 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.45)]'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse shadow-sm" />
+              <span>{activeSign}</span>
+            </div>
+          </div>
+        )}
+
         <svg
           viewBox="0 0 160 180"
           className="w-full h-full overflow-visible drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]"
@@ -284,18 +314,18 @@ export const TechBotMascot = ({
                 />
                 <circle cx="80" cy="67" r="2.5" fill="#C084FC" filter="url(#neonEyeGlow)" />
               </>
-            ) : isEmail ? (
-              /* Email: Wide attentive scanning eyes */
+            ) : isEmail || isName ? (
+              /* Attentive scanning / greeting eyes */
               <>
-                <circle cx="60" cy="55" r="8.5" fill="#00E5FF" filter="url(#neonEyeGlow)" />
+                <circle cx="60" cy="55" r="8.5" fill={glowColor} filter="url(#neonEyeGlow)" />
                 <circle cx="62.5" cy="52.5" r="3" fill="#FFFFFF" />
 
-                <circle cx="100" cy="55" r="8.5" fill="#00E5FF" filter="url(#neonEyeGlow)" />
+                <circle cx="100" cy="55" r="8.5" fill={glowColor} filter="url(#neonEyeGlow)" />
                 <circle cx="102.5" cy="52.5" r="3" fill="#FFFFFF" />
 
                 <path
                   d="M 74 66 Q 80 70 86 66"
-                  stroke="#00E5FF"
+                  stroke={glowColor}
                   strokeWidth="2"
                   strokeLinecap="round"
                   fill="none"
@@ -420,8 +450,8 @@ export const TechBotMascot = ({
             style={{
               transform: isSuccess
                 ? 'translate(12px, -48px) rotate(42deg)'
-                : isPassword
-                ? 'translate(-22px, -46px) rotate(14deg)'
+                : showSign
+                ? 'translate(4px, -14px) rotate(14deg)'
                 : isWalking
                 ? stepCycle % 2 === 0
                   ? 'translate(-1px, -3px) rotate(-6deg)'
@@ -430,11 +460,22 @@ export const TechBotMascot = ({
               transformOrigin: '112px 100px',
             }}
           >
+            {/* Handheld Cyber Signboard Pole in Grip */}
+            {showSign && (
+              <g>
+                <line x1="115" y1="55" x2="115" y2="152" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
+                <line x1="115" y1="55" x2="115" y2="152" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="115" cy="152" r="2.5" fill="#64748B" />
+              </g>
+            )}
+
+            {/* Arm Joint and Limbs */}
             <circle cx="112" cy="100" r="5.5" fill="#64748B" stroke="#334155" strokeWidth="1" />
             <rect x="111" y="103" width="7" height="18" rx="3.5" fill="#334155" />
             <circle cx="114.5" cy="122" r="4" fill="#64748B" />
             <rect x="110" y="123" width="9" height="14" rx="4" fill="url(#chassisGrad)" stroke="#64748B" strokeWidth="1" />
 
+            {/* Hand & Fingers (Grip over the pole) */}
             <g transform="translate(107, 137)">
               <circle cx="8" cy="6" r="6.5" fill="#0F172A" stroke={glowColor} strokeWidth="1.5" />
               <circle cx="4" cy="11" r="2" fill="#CBD5E1" />
